@@ -40,13 +40,13 @@ class step:
 
 
 class SelectionProcessor(processor.ProcessorABC):
-    """Processor template for event selection and minitree creation."""
+    """Processor template for event selection and tree creation."""
     def __init__(self, selection_cfg, mode="eager"):
         """Initialize the selection processor with configuration."""
         assert mode in ["eager", "virtual", "dask"]
         self._mode = mode
         self.cfg = selection_cfg
-        self.minitree = {}
+        self.tree = {}
         self.histograms = {}
         self.initialize_non_ntuple()
         self.step_tag = ""
@@ -54,7 +54,7 @@ class SelectionProcessor(processor.ProcessorABC):
         self.gen_channels = {}
         self.selector = PackedSelection()
         self.steps = {}
-        self.output_mode = "minitree"
+        self.output_mode = "tree"
         self._make_selection_histograms = True
         self.ban_weights = []
 
@@ -62,13 +62,13 @@ class SelectionProcessor(processor.ProcessorABC):
         """Initialize any non-ntuple data needed for processing"""
         self.mappings = {}
         with uproot.open(self.cfg['file']) as f:
-            for key in f["Mapping"].keys():
-                self.mappings[key] = f["Mapping"][key].array()
+            # for key in f["Mapping"].keys():
+            #     self.mappings[key] = f["Mapping"][key].array()
 
             if self.cfg['isData'] == "False":
                 self.weighted_events = {}
-                for key in f["EventsBeforeSelection"].keys():
-                    value = ak.sum(f["EventsBeforeSelection"][key].array())
+                for key in f["Runs"].keys():
+                    value = ak.sum(f["Runs"][key].array())
                     self.weighted_events[key] = hist.Hist(hist.axis.Variable([0,1],
                                                 name="weightedEvents", label="weightedEvents"),
                                                 storage=hist.storage.Weight())
@@ -88,9 +88,9 @@ class SelectionProcessor(processor.ProcessorABC):
 
         if self.cfg['isSignal'] == "True":
             for gen_channel, chan_mask in self.gen_channels.items():
-                if gen_channel not in self.minitree:
-                    self.minitree[gen_channel] = {}
-                self.minitree[gen_channel][self.step_tag+"step0"] = make_snapshot(
+                if gen_channel not in self.tree:
+                    self.tree[gen_channel] = {}
+                self.tree[gen_channel][self.step_tag+"step0"] = make_snapshot(
                     events[chan_mask],
                     self.cfg['structure'], empty_reco=True
                 )
@@ -98,11 +98,11 @@ class SelectionProcessor(processor.ProcessorABC):
     def make_snapshot(self, events, step_label, step_name=""):
         """Create a snapshot of events at the current selection step"""
         for chan in self.channels:
-            if chan not in self.minitree:
-                self.minitree[chan] = {}
+            if chan not in self.tree:
+                self.tree[chan] = {}
             print(self.steps[step_label].mask_labels[chan])
             selected_events = events[self.selector.all(*self.steps[step_label].mask_labels[chan])]
-            self.minitree[chan][self.step_tag + step_name] = make_snapshot(
+            self.tree[chan][self.step_tag + step_name] = make_snapshot(
                 selected_events,
                 self.cfg['structure']
             )
@@ -199,7 +199,7 @@ class SelectionProcessor(processor.ProcessorABC):
         if self.cfg['isData'] == "False":
             events = make_weights_fields(events, self.cfg['weights'], self.ban_weights)
         else:
-            events["eventWeight"] = ak.ones_like(events.eventNumber)
+            events["eventWeight"] = ak.ones_like(events.event)
 
         events = self.event_selection(events)
 
@@ -216,9 +216,9 @@ class SelectionProcessor(processor.ProcessorABC):
         #         self.histograms[chan]["onecut"] = yield_outputs[0]
         #         self.histograms[chan]["cutflow"] = yield_outputs[1]
 
-        if self.output_mode == "minitree":
+        if self.output_mode == "tree":
             return {
-                "minitree": self.minitree,
+                "tree": self.tree,
                 "weightedEvents": self.weighted_events,
                 "channels": list(self.channels.keys())
             }
@@ -230,7 +230,7 @@ class SelectionProcessor(processor.ProcessorABC):
             }
         elif self.output_mode == "both":
             return {
-                "minitree": self.minitree,
+                "tree": self.tree,
                 "histograms": self.histograms,
                 "weightedEvents": self.weighted_events,
                 "channels": list(self.channels.keys())

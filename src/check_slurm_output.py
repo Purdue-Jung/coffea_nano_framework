@@ -3,7 +3,7 @@ Script to check the output of Slurm jobs.
 """
 import argparse
 import os
-import utils
+import common.utils as utils
 
 def check_command_output(command, fw_config):
     """
@@ -14,9 +14,9 @@ def check_command_output(command, fw_config):
         return False
 
     era = str(command.split("era:")[-1].split(",")[0].strip())
-    minitree_dir = fw_config["minitree_dir"].replace("<era>", era[:4])
+    tree_dir = fw_config["tree_dir"].replace("<era>", era[:4])
     output_file = command.split("--output ")[-1].split(" --")[0].strip()+".root"
-    output_path = f"{minitree_dir}/{output_file}"
+    output_path = f"{tree_dir}/{output_file}"
     if not output_file or not output_path:
         print(f"Invalid command: {command}")
         return False
@@ -78,7 +78,7 @@ def check_logs_for_empty(fw_config):
                 with open(empty_files_path, "a", encoding='utf-8') as ef:
                     ef.write(f"{output_name}\n")
 
-        if "Saved final minitree: " not in content:
+        if "Saved final tree: " not in content:
             print(content)
             try:
                 command = lines[2]

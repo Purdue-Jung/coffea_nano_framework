@@ -11,14 +11,14 @@ import hist
 
 def parse_main_config()->dict:
     """
-    Parses the main_config.cfg file and returns a dictionary with the key-value pairs
+    Parses the main.cfg file and returns a dictionary with the key-value pairs
     
     Returns:
         :return main_config_dict:
-            A dictionary with the key-value pairs from the main_config.cfg file
+            A dictionary with the key-value pairs from the main.cfg file
     """
-    # Open the main_config.cfg file
-    with open('./main_config.cfg', encoding='utf-8') as main_config:
+    # Open the main.cfg file
+    with open('./main.cfg', encoding='utf-8') as main_config:
         main_config_dict = {}
         for line in main_config:
             # Skip comments and empty lines
