@@ -2,7 +2,6 @@
     Module for applying EGM corrections.
 """
 import correctionlib
-import awkward as ak
 import yaml
 import numpy as np
 from selection_utils import add_to_obj
@@ -32,7 +31,14 @@ def electron_sf(obj, working_point, cfg):
     egm_corr = correctionlib.CorrectionSet.from_file(egm_cfg["file"])
     elec_sf = egm_corr[egm_cfg["correction_name"]]
 
-    obj['SCeta'] = obj.deltaEtaSC + obj.Eta
+    # obj['SCeta'] = obj.deltaEtaSC + obj.eta
+    obj = add_to_obj(
+        None,
+        obj,
+        {
+            'SCeta': obj.deltaEtaSC + obj.eta
+        }
+    )
     val_type_idx = None
     inputs = []
     for corr_input in egm_cfg["inputs"]:
@@ -56,6 +62,7 @@ def electron_sf(obj, working_point, cfg):
     inputs_UP[val_type_idx] = "sfup"
     inputs_DOWN[val_type_idx] = "sfdown"
     obj = add_to_obj(
+        None,
         obj,
         {
             "electronIDWeight": elec_sf.evaluate(*inputs),
@@ -100,14 +107,12 @@ def electron_corr(events, cfg):
             events.Electron.deltaEtaSC + events.Electron.eta,
         )
         nevents = cfg["nEntriesBeforeSelection"]
-        if not isinstance(nevents, int):
-            nevents = nevents.compute()
         rng = np.random.normal(loc=0.0, scale=1.0, size=nevents)
         smearing = 1 + smear * rng
         pt_corr = events.Electron.pt * smearing
 
-    events.Electron = add_to_obj(
-        events.Electron, {"corr_pt": pt_corr}
+    events = add_to_obj(
+        events, "Electron", {"corr_pt": pt_corr}
     )
     print("Applied electron energy corrections.")
     return events

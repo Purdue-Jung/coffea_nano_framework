@@ -3,7 +3,6 @@
 """
 import correctionlib
 import yaml
-import dask_awkward as dak
 from external.MuonScaRe import pt_resol, pt_scale
 from selection_utils import add_to_obj
 
@@ -70,10 +69,10 @@ def muon_corr(events, cfg):
 
     # Load correction set
     muo_corr = correctionlib.CorrectionSet.from_file(muo_cfg["file"])
-    pt = events.muon.pt
-    eta = events.muon.eta
-    phi = events.muon.phi
-    charge = events.muon.charge
+    pt = events.Muon.pt
+    eta = events.Muon.eta
+    phi = events.Muon.phi
+    charge = events.Muon.charge
     if cfg["isData"] == "True":
         pt_corr = pt_scale(
             0,
@@ -86,7 +85,7 @@ def muon_corr(events, cfg):
         )
 
     else:
-        n_tracker_layers = events.muon.nTrackerLayers
+        n_tracker_layers = events.Muon.nTrackerLayers
         event_number = events.event
         luminosity_block = events.luminosityBlock
         pt_corr = pt_scale(
@@ -110,7 +109,7 @@ def muon_corr(events, cfg):
             nested = True
         )
 
-    events.muon = add_to_obj(
-        events.muon, {"corr_pt": dak.from_awkward(pt_corr, npartitions=1)}
+    events = add_to_obj(
+        events, "Muon", {"corr_pt": pt_corr}
     )
     return events

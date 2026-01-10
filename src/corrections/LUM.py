@@ -33,8 +33,8 @@ def pileup_weights(events, cfg):
     pu_weight = lum_corr[lum_cfg["correction_name"]]
 
     # Evaluate pileup weights for each event
-    events["puWeight"] = pu_weight.evaluate(events.pileUp.nTrueInt, "nominal")
-    events["puWeight_UP"] = pu_weight.evaluate(events.pileUp.nTrueInt, "up")
-    events["puWeight_DOWN"] = pu_weight.evaluate(events.pileUp.nTrueInt, "down")
+    events["puWeight"] = pu_weight.evaluate(events.Pileup.nTrueInt, "nominal")
+    events["puWeight_UP"] = pu_weight.evaluate(events.Pileup.nTrueInt, "up")
+    events["puWeight_DOWN"] = pu_weight.evaluate(events.Pileup.nTrueInt, "down")
 
     return events

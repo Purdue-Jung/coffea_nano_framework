@@ -6,15 +6,14 @@ import awkward as ak
 from processor import SelectionProcessor
 from object_selection import trailing_selection
 from selection_utils import lepton_merging, dilepton_pairing, get_4vector_sum,\
-    delta_r, add_to_obj
+    delta_r, add_to_obj, update_collection
 import corrections.JME as JME
-import corrections.BTV as BTV
 import corrections.LUM as LUM
 import corrections.EGM as EGM
 import corrections.MUO as MUO
 
 class Selector(SelectionProcessor):
-    """Processor for dilepton ttbar event selection and minitree creation."""
+    """Processor for dilepton ttbar event selection and tree creation."""
     def __init__(self, selection_cfg):
         super().__init__(selection_cfg)
         self.step_tag = "tree_variables_"
@@ -30,7 +29,7 @@ class Selector(SelectionProcessor):
         ## Correction
         events = EGM.electron_corr(events, self.cfg)
         ## Electron selection
-        electron = events.electron
+        electron = events.Electron
         # Pt cut
         electron = electron[electron.corr_pt >= 10.0]
         # Eta cut
@@ -40,7 +39,7 @@ class Selector(SelectionProcessor):
             (np.abs(electron.eta) > 1.566) | (np.abs(electron.eta) < 1.4442)
             ]
         # ID cut
-        electron = electron[electron.CutBased >= 4] # Tight
+        electron = electron[electron.cutBased >= 4] # Tight
         electron = EGM.electron_sf(electron, "Tight", self.cfg)
         # dxy cut
         electron = electron[np.abs(electron.dxy) <= 0.045]
@@ -49,12 +48,12 @@ class Selector(SelectionProcessor):
         # Iso cut
         electron = electron[electron.miniPFRelIso_all <= 0.5]
 
-        events.electron = electron
+        events = update_collection(events, "Electron", electron)
 
         ## Muon selection
         ## correction
         events = MUO.muon_corr(events, self.cfg)
-        muon = events.muon
+        muon = events.Muon
         # Pt cut
         muon = muon[muon.corr_pt >= 10.0]
         # Eta cut
@@ -70,12 +69,12 @@ class Selector(SelectionProcessor):
         # dz cut
         muon = muon[np.abs(muon.dz) <= 0.02]
 
-        events.muon = muon
+        events = update_collection(events, "Muon", muon)
 
         ## Tau selection
         ## correction
         # events = TAU.tau_corr(events, self.cfg)
-        tau = events.tau
+        tau = events.Tau
         # Pt cut
         tau = tau[tau.pt >= 25.0]
         # Eta cut
@@ -84,6 +83,8 @@ class Selector(SelectionProcessor):
         #
         # dz cut
         tau = tau[np.abs(tau.dz) <= 0.02]
+
+        events = update_collection(events, "Tau", tau)
 
         ## Merge electrons and muons into leptons
         events["lepton"] = lepton_merging(events, include_tau=True)
@@ -100,8 +101,8 @@ class Selector(SelectionProcessor):
         }
 
         ## Add to jetsAK4
-        events.Jet = add_to_obj(
-            events.Jet,
+        events = add_to_obj(
+            events, "Jet",
             {
                 "DeltaR_lep": delta_r(events.Jet, events.lep),
                 "DeltaR_lbar": delta_r(events.Jet, events.lbar)
@@ -111,7 +112,7 @@ class Selector(SelectionProcessor):
         ## jetsAK4 selection
         jets = events.Jet
         # Pt cut
-        jets = jets[jets.Pt > 30.0]
+        jets = jets[jets.pt > 30.0]
         # Eta cut
         jets = jets[np.abs(jets.eta) < 2.5]
         # ID selection
@@ -135,7 +136,7 @@ class Selector(SelectionProcessor):
         # veto map
         jets = jets[JME.veto_map(jets,"jetvetomap",self.cfg)]
 
-        events["Jet_selected"] = jets
+        events = update_collection(events, "Jet_selected", jets)
 
         # tagger = "UParTAK4" if self.cfg["era"] in ["2024", "2025"]\
         #     else "robustParticleTransformer"
@@ -218,25 +219,17 @@ class Selector(SelectionProcessor):
             parent="METFilters"
         )
 
-        # step2
-        self.add_selection_step(
-            step_label="LeptonMultiplicity",
-            mask=(ak.num(events.lepton, axis=1) >= 2),
-            parent="PrimaryVertex"
-        )
-
         # step3
         self.add_selection_step(
             step_label="LeptonInvariantMass",
-            mask=(events.llbar.M > 20),
-            parent="LeptonMultiplicity"
+            mask=(events.llbar.mass > 20),
+            parent="PrimaryVertex"
         )
 
         # self.create_cutflow_histograms(events, step7)
 
         self.make_snapshot(events, "METFilters", step_name="stepMET")
         self.make_snapshot(events, "PrimaryVertex", step_name="stepPV")
-        self.make_snapshot(events, "LeptonMultiplicity", step_name="stepLepNum")
         self.make_snapshot(events, "LeptonInvariantMass", step_name="stepLepInvMass")
 
         return events
@@ -245,113 +238,4 @@ class Selector(SelectionProcessor):
         """
         Create HLT mask for dilepton channels
         """
-        # Build a robust index map from HLT path name -> index
-        try:
-            # hlt_map may be list/tuple, Awkward, or Dask-Awkward
-            names = hlt_map
-            if not isinstance(names, (list, tuple)):
-                names = ak.to_list(hlt_map)
-            hlt_index_map = {}
-            for idx, name in enumerate(names):
-                if name in hlt_index_map:
-                    break
-                hlt_index_map[name] = idx
-            #hlt_index_map = {name: idx for idx, name in enumerate(names)}
-            print(f"HLT index map created with {len(hlt_index_map)} entries.")
-        except Exception as e:
-            print(f"ERROR: Failed to create HLT index map: {e}")
-            # return false mask of correct shape
-            return ak.full_like(events.event, False, dtype=bool)
-
-        def false_mask():
-            return ak.full_like(events.event, False, dtype=bool)
-
-        # Build masks for all groups present in cfg["HLT"]
-        tot_masks = {}
-        for grp, grp_hlt in cfg["HLT"].items():
-            # For data, if dataset is incompatible with this group, use false mask
-            if cfg["isData"] == "True":
-                dataset = cfg["process"].split("_")[-1]
-                dataset = dataset[0].upper() + dataset[1:] if dataset else ""
-                if dataset not in grp_hlt["datasets"]:
-                    print(f"Dataset {dataset} not in datasets for group {grp}. Using false mask.")
-                    tot_masks[grp] = false_mask()
-                    continue
-
-            # Collect indices for the target HLT paths
-            idxs = []
-            for path in grp_hlt["triggers"]:
-                idx = hlt_index_map.get(path)
-                if idx is None:
-                    print(f"WARNING: HLT path {path} not found in mappings.")
-                else:
-                    idxs.append(idx)
-
-            if not idxs:
-                print(f"WARNING: No valid HLT paths for group {grp}. Using false mask.")
-                tot_masks[grp] = false_mask()
-                continue
-
-            # OR all target indices for this group
-            mask = ak.zeros_like(events.event, dtype=bool)
-            for idx in idxs:
-                mask = mask | ak.any(events.HLTidx == idx, axis=1)
-            tot_masks[grp] = mask
-
-        # Helper to get a mask safely
-        def M(name):
-            return tot_masks.get(name, false_mask())
-
-        # Combine per data/MC and channel
-        if cfg["isData"] == "False":
-            # MC: use union of the groups relevant for this dilepton channel
-            match channel:
-                case "ee":
-                    tot_mask = M("ee") | M("se")
-                case "mumu":
-                    tot_mask = M("mumu") | M("smu")
-                case "emu":
-                    tot_mask = M("emu") | M("se") | M("smu")
-                case _:
-                    raise ValueError(f"Channel {channel} not supported.")
-            return tot_mask
-        else:
-            # Data: dataset-specific logic with anti-overlaps
-            if channel == "ee":
-                match dataset:
-                    case "EGamma":
-                        tot_mask = M("ee") | M("se")
-                    case _:
-                        print(f"Dataset {dataset} not supported for channel {channel} in data."
-                            " Returning false mask.")
-                        # use events.event to create a false mask
-                        tot_mask = false_mask()
-            elif channel == "emu":
-                match dataset:
-                    case "MuonEG":
-                        tot_mask = M("emu")
-                    case "EGamma":
-                        tot_mask = M("se") & ~M("emu")
-                    case "SingleMuon":
-                        tot_mask = M("smu") & ~M("emu") & ~M("se")
-                    case "Muon":
-                        tot_mask = M("smu") & ~M("emu") & ~M("se")
-                    case _:
-                        print(f"Dataset {dataset} not supported for channel {channel} in data. "
-                            "Returning false mask.")
-                        tot_mask = false_mask()
-            elif channel == "mumu":
-                match dataset:
-                    case "Muon":
-                        tot_mask = M("mumu") | M("smu")
-                    case "SingleMuon":
-                        tot_mask = ~M("mumu") & M("smu")
-                    case "DoubleMuon":
-                        tot_mask = M("mumu")
-                    case _:
-                        print(f"Dataset {dataset} not supported for channel {channel} in data. "
-                            "Returning false mask.")
-                        tot_mask = false_mask()
-            else:
-                raise ValueError(f"Channel {channel} not supported.")
-            return tot_mask
+        pass
