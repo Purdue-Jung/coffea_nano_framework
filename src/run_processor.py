@@ -1,6 +1,7 @@
 """
     Loads user processor and runs it
 """
+import os
 import importlib
 import sys
 import pathlib
@@ -79,6 +80,8 @@ def main() -> None:
 
     status_path = fw_config["fw_dir"] + "/selection_status/" + \
         args.input.split("/")[-1].replace(".root", "_status.out")
+    if not os.path.exists(fw_config["fw_dir"] + "/selection_status"):
+        os.makedirs(fw_config["fw_dir"] + "/selection_status")
     tree_cfg["status_file"] = open(status_path, "w", encoding="utf-8")
     tree_cfg["status_file"].write(f"Processing file: {args.input}\n")
 
