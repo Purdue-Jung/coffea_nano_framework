@@ -64,7 +64,7 @@ class Selector(SelectionProcessor):
         # ID cut
         muon = muon[muon.tightId] # boolean mask
         muon = MUO.muon_sf(muon, "NUM_TightID_DEN_TrackerMuons", self.cfg)
-        #muon = MUO.muon_sf(muon, "NUM_TightPFIso_DEN_TightID", self.cfg)
+        muon = MUO.muon_sf(muon, "NUM_TightPFIso_DEN_TightID", self.cfg)
         # dxy cut
         muon = muon[np.abs(muon.dxy) <= 0.045]
         # dz cut
@@ -141,7 +141,6 @@ class Selector(SelectionProcessor):
         jets = events.Jet
         # Remove Lepton Overlap
         jets_idx = ak.local_index(jets.pt)
-        print(jets_idx)
         lep_mask = ~(jets_idx == events.lep.jetIdx)
         lbar_mask = ~(jets_idx == events.lbar.jetIdx)
         jets = jets[lep_mask & lbar_mask]

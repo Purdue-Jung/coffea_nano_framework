@@ -45,6 +45,7 @@ def muon_sf(obj, sf_name, cfg, pt_field="corr_pt"):
         obj["muonIDWeightSyst_DOWN"] = muon_sf_.evaluate(
             obj.eta, obj[pt_field], "systdown"
         )
+        print("Muon ID SFs obtained.")
     elif "Iso" in sf_name:
         obj["muonIsoWeight"] = muon_sf_.evaluate(
             obj.eta, obj[pt_field], "nominal"
@@ -55,6 +56,7 @@ def muon_sf(obj, sf_name, cfg, pt_field="corr_pt"):
         obj["muonIsoWeightSyst_DOWN"] = muon_sf_.evaluate(
             obj.eta, obj[pt_field], "systdown"
         )
+        print("Muon Iso SFs obtained.")
     return obj
 
 

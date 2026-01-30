@@ -105,6 +105,9 @@ def lepton_merging(events, include_tau=True, sort_by_corr_pt=True):
         for field in lepton_fields:
             if field in tau_fields and field not in _new_lepton_fields or "Weight" in field:
                 _new_lepton_fields.append(field)
+        for field in tau_fields:
+            if "Weight" in field and field not in _new_lepton_fields:
+                _new_lepton_fields.append(field)
         lepton_fields = _new_lepton_fields
 
     lepton = {}
