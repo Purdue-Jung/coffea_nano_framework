@@ -83,19 +83,36 @@ class Selector(SelectionProcessor):
                             cfg=self.cfg,
                             dependency="pt"
                             )
+        
         tau = events.Tau
-        # Pt cut
-        tau = tau[tau.pt >= 25.0]
-        # Eta cut
-        tau = tau[np.abs(tau.eta) <= 2.5]
-        # ID cut
-        tau = tau[tau.idDeepTau2018v2p5VSe >= 6] # Tight
-        tau = tau[tau.idDeepTau2018v2p5VSmu >= 4] # Tight
-        tau = tau[tau.idDeepTau2018v2p5VSjet >= 6] # Tight
-        # dz cut
-        tau = tau[np.abs(tau.dz) <= 0.02]
+        tauprod = events.TauProd
 
-        events = update_collection(events, "Tau", tau)
+        tau_criteria = (
+            (tau.pt >= 25.0) & 
+            (np.abs(tau.eta) <= 2.5) & 
+            (tau.idDeepTau2018v2p5VSe >= 6) & 
+            (tau.idDeepTau2018v2p5VSmu >= 4) & 
+            (tau.idDeepTau2018v2p5VSjet >= 6) & 
+            (np.abs(tau.dz) <= 0.02)
+        )
+        selected_taus = tau[tau_criteria]
+
+        # Modify TauProd_tauIdx
+        max_ntau = ak.max(ak.num(tau))
+        rect_tau_criteria = ak.fill_none(ak.pad_none(tau_criteria, max_ntau, axis=1), False)
+        rect_new_tauidx = ak.from_numpy(np.cumsum(ak.to_numpy(rect_tau_criteria), axis=1) - 1)
+        # rect_new_tauidx[~rect_tau_criteria] = -1
+        rect_new_tauidx = ak.where(rect_tau_criteria, rect_new_tauidx, -1)
+        new_tauprod_tauidx = rect_new_tauidx[tauprod.tauIdx]
+
+        tauprod_mask = new_tauprod_tauidx >= 0
+        tauprod = tauprod[tauprod_mask]
+        new_tauprod_tauidx = new_tauprod_tauidx[tauprod_mask]
+        
+        assert not ak.any(new_tauprod_tauidx < 0)
+        events = update_collection(events, "Tau", selected_taus)
+        tauprod = update_collection(tauprod, "tauIdx", new_tauprod_tauidx)
+        events = update_collection(events, "TauProd", tauprod)
 
         ## Merge electrons and muons into leptons
         events["lepton"] = lepton_merging(events, include_tau=True)
