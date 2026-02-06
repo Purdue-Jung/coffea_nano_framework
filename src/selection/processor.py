@@ -9,7 +9,7 @@ import awkward as ak
 import copy
 from coffea import processor
 from coffea.analysis_tools import PackedSelection
-from selection_utils import apply_golden_json, detector_defects_mask,\
+from selection.selection_utils import apply_golden_json, detector_defects_mask,\
     make_weights_fields, make_snapshot
 
 class step:

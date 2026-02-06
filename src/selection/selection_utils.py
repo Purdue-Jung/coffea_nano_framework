@@ -9,6 +9,18 @@ import awkward as ak
 from coffea.lumi_tools import LumiMask
 from corrections.JME import veto_map
 
+def trailing_selection(leading_mask, subleading_mask, obj_var):
+    """Apply leading and subleading masks to object variable."""
+    leading_mask = ak.firsts(leading_mask)
+    subleading_mask = subleading_mask[:,1:]
+    leading_mask_broadcasted = ak.broadcast_arrays( # pylint: disable=unsubscriptable-object
+                    obj_var,
+                    leading_mask)[1]
+    tot_mask = ak.concatenate(
+                    [leading_mask_broadcasted[:, :1], subleading_mask],
+                    axis=1)
+    return tot_mask
+
 def apply_golden_json(events, era):
     """Apply golden JSON mask to data events based on the era."""
     match era:

@@ -5,7 +5,7 @@ import numpy as np
 import correctionlib
 import awkward as ak
 import yaml
-from selection_utils import add_to_obj
+from selection.selection_utils import add_to_obj
 
 def btagging(events, jets_field, tagger, working_point, cfg, correction_type="shape"):
     """

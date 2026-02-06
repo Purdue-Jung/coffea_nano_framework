@@ -3,9 +3,8 @@
 """
 import numpy as np
 import awkward as ak
-from processor import SelectionProcessor
-from object_selection import trailing_selection
-from selection_utils import lepton_merging, dilepton_pairing, get_4vector_sum,\
+from selection.processor import SelectionProcessor
+from selection.selection_utils import lepton_merging, dilepton_pairing, get_4vector_sum,\
     delta_r, add_to_obj, update_collection
 import corrections.JME as JME
 import corrections.LUM as LUM

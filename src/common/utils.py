@@ -27,6 +27,7 @@ def parse_main_config()->dict:
 
             # Split the line into key and value
             config_key, value = line.split('=')
+            value = value.split('#')[0]  # Remove inline comments
 
             # If the key is signals, split the value by commas
             if config_key.strip() in ['signals', 'channels', 'eras']:
