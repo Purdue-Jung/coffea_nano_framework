@@ -1,0 +1,347 @@
+electron_pt:
+  field: Electron.pt
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Electrons"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 400
+  label: "Electrons $p_{T}$ [GeV]"
+  weights:
+    - genWeight
+
+electron_eta:
+  field: Electron.eta
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Electrons"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -4
+      - 4
+  label: "Electrons $\\eta$"
+  weights:
+    - genWeight
+
+electron_phi:
+  field: Electron.phi
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Electrons"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -3.2
+      - 3.2
+  label: "Electrons $\\phi$"
+  weights:
+    - genWeight
+
+muon_pt:
+  field: Muon.pt
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Muons"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 400
+  label: "Muons $p_{T}$ [GeV]"
+  weights:
+    - genWeight
+
+muon_eta:
+  field: Muon.eta
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Muons"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -4
+      - 4
+  label: "Muons $\\eta$"
+  weights:
+    - genWeight
+
+muon_phi:
+  field: Muon.phi
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Muons"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -3.2
+      - 3.2
+  label: "Muons $\\phi$"
+  weights:
+    - genWeight
+
+tau_pt:
+  field: Tau.pt
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Taus"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 400
+  label: "Taus $p_{T}$ [GeV]"
+  weights:
+    - genWeight
+
+tau_eta:
+  field: Tau.eta
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Taus"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -4
+      - 4
+  label: "Taus $\\eta$"
+  weights:
+    - genWeight
+
+tau_phi:
+  field: Tau.phi
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Taus"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -3.2
+      - 3.2
+  label: "Taus $\\phi$"
+  weights:
+    - genWeight
+
+jet_pt:
+  field: Jet.pt
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Jets"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 400
+  label: "Jets $p_{T}$ [GeV]"
+  weights:
+    - genWeight
+
+jet_eta:
+  field: Jet.eta
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Jets"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -4
+      - 4
+  label: "Jets $\\eta$"
+  weights:
+    - genWeight
+
+jet_phi:
+  field: Jet.phi
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Jets"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -3.2
+      - 3.2
+  label: "Jets $\\phi$"
+  weights:
+    - genWeight
+
+first_jet_pt:
+  field: Jet.pt
+  axis_type: Regular
+  subIdx: 0 # meaning the leading jet
+  ylabel: "Leading Jet"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 400
+  label: "Leading Jet $p_{T}$ [GeV]"
+  weights:
+    - genWeight
+
+first_jet_eta:
+  field: Jet.eta
+  axis_type: Regular
+  subIdx: 0 # meaning the leading jet
+  ylabel: "Leading Jet"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -4
+      - 4
+  label: "Leading Jet $\\eta$"
+  weights:
+    - genWeight
+
+first_jet_phi:
+  field: Jet.phi
+  axis_type: Regular
+  subIdx: 0 # meaning the leading jet
+  ylabel: "Leading Jet"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -3.2
+      - 3.2
+  label: "Leading Jet $\\phi$"
+  weights:
+    - genWeight
+
+second_jet_pt:
+  field: Jet.pt
+  axis_type: Regular
+  subIdx: 1 # meaning the subleading jet
+  ylabel: "Subleading Jet"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 400
+  label: "Subleading Jet $p_{T}$ [GeV]"
+  weights:
+    - genWeight
+
+second_jet_eta:
+  field: Jet.eta
+  axis_type: Regular
+  subIdx: 1 # meaning the subleading jet
+  ylabel: "Subleading Jet"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -4
+      - 4
+  label: "Subleading Jet $\\eta$"
+  weights:
+    - genWeight
+
+second_jet_phi:
+  field: Jet.phi
+  axis_type: Regular
+  subIdx: 1 # meaning the subleading jet
+  ylabel: "Subleading Jet"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - -3.2
+      - 3.2
+  label: "Subleading Jet $\\phi$"
+  weights:
+    - genWeight
+
+mjj:
+  field: "mjj"
+  axis_type: Regular
+  ylabel: "Events"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 2000
+  label: "Dijet Mass $m_{jj}$ [GeV]"
+  weights:
+    - genWeight
+
+deltaEtajj:
+  field: "deltaEtajj"
+  axis_type: Regular
+  ylabel: "Events"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 10
+  label: "Dijet $\\Delta\\eta_{jj}$"
+  weights:
+    - genWeight
+
+deltaRjj:
+  field: "deltaRjj"
+  axis_type: Regular
+  ylabel: "Events"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 10
+  label: "Dijet $\\Delta R_{jj}$"
+  weights:
+    - genWeight
+
+btagDeepFlavB:
+  field: Jet.btagDeepFlavB
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Jets"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 1
+  label: "Jets DeepCSV b-tag score"
+  weights:
+    - genWeight
+
+btagPNetB:
+  field: Jet.btagPNetB
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Jets"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 1
+  label: "Jets PNet b-tag score"
+  weights:
+    - genWeight
+
+btagUParTAK4B:
+  field: Jet.btagUParTAK4B
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Jets"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 1
+  label: "Jets UParTAK4 b-tag score"
+  weights:
+    - genWeight
+
+idDeepTauVse:
+  field: Tau.idDeepTau2018v2p5VSe
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Taus"
+  inputs: # normal input for hist.axis.Regular
+      - 9
+      - -0.5
+      - 8.5
+  label: "Taus DeepTau VSe score"
+  weights:
+    - genWeight
+
+idDeepTauVsmu:
+  field: Tau.idDeepTau2018v2p5VSmu
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Taus"
+  inputs: # normal input for hist.axis.Regular
+      - 5
+      - -0.5
+      - 4.5
+  label: "Taus DeepTau VSmu score"
+  weights:
+    - genWeight
+
+idDeepTauVsjet:
+  field: Tau.idDeepTau2018v2p5VSjet
+  axis_type: Regular
+  subIdx: -1 # meaning all
+  ylabel: "Taus"
+  inputs: # normal input for hist.axis.Regular
+      - 9
+      - -0.5
+      - 8.5
+  label: "Taus DeepTau VSjet score"
+  weights:
+    - genWeight
