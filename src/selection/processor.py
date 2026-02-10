@@ -4,7 +4,6 @@
 import uproot
 import numpy as np
 import hist
-import dask
 import awkward as ak
 import copy
 from uncertainties import ufloat
@@ -118,8 +117,8 @@ class SelectionProcessor(processor.ProcessorABC):
                 onecut, cutflow, labels = cutflow_obj.yieldhist()
                 print(cutflow, labels)
                 print(cutflow.axes)
-                self.tree[chan]["cutflow_" + step_name] = cutflow
-                self.tree[chan]["onecut_" + step_name] = onecut
+                self.tree[chan]["cutflow_" + step_name] = copy.deepcopy(cutflow)
+                self.tree[chan]["onecut_" + step_name] = copy.deepcopy(onecut)
                 cutflow_eff = convert_uarray_to_hist(
                     cutflow, convert_hist_to_uarray(cutflow) / ufloat(cutflow[0].value,
                                                                     cutflow[0].variance**0.5)
@@ -161,50 +160,6 @@ class SelectionProcessor(processor.ProcessorABC):
             self.selector.add(step_label,mask)
         self.steps[step_label] = step(step_label, mask_labels,
                                     parent=self.steps[parent], metadata=metadata)
-
-    def create_cutflow_histograms(self, events, last_step, weight_field="eventWeight"):
-        """Create cutflow histograms for the given events and last step"""
-        # nentries = {chan: [ak.num(events, axis=0)] for chan in self.channels}
-        nevents = {chan: [ak.sum(events[weight_field], axis=0)] for chan in self.channels}
-        nvariances = {chan: [ak.sum(events[weight_field]**2, axis=0)] for chan in self.channels}
-        labels = {chan: ["Initial"] for chan in self.channels}
-        for chan in self.channels:
-            step_labels = last_step.mask_labels[chan]
-
-            for step_label in step_labels:
-                labels[chan].append(step_label)
-                selected_events = events[self.selector.all(*labels[chan][1:])]
-                # nentries[chan].append(ak.num(selected_events, axis=0))
-                nevents[chan].append(ak.sum(selected_events[weight_field], axis=0))
-                nvariances[chan].append(ak.sum(selected_events[weight_field]**2, axis=0))
-
-        (nevents,) = dask.compute(nevents)
-        (nvariances,) = dask.compute(nvariances)
-
-        for chan in self.channels:
-            if chan not in self.histograms:
-                self.histograms[chan] = {}
-            # self.histograms[chan]["nentries"] = hist.Hist(
-            #     hist.axis.Variable([0,1],
-            #                     name="nentries", label="nentries"),
-            #     storage=hist.storage.Weight()
-            # )
-            # self.histograms[chan]["nentries"].fill(
-            #     [0.5]*len(nentries[chan]),
-            #     weight=nentries[chan]
-            # )
-
-            self.histograms[chan]["nevents"] = hist.Hist(
-                hist.axis.StrCategory(labels[chan], name="label", label="labels"),
-                storage=hist.storage.Weight()
-            )
-            self.histograms[chan]["nevents"].fill(
-                label=labels[chan],
-                weight=nevents[chan]
-            )
-            self.histograms[chan]["nevents"][...] = np.concatenate(
-                (np.array(nevents[chan])[:, None], np.array(nvariances[chan])[:, None]), axis=1
-            )
 
     def process(self, events):
         """ Main process """

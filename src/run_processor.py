@@ -127,6 +127,9 @@ def main(input_file=None, output="", output_histos="", metadata=None) -> None:
 
                 for key, array in output["tree"][chan].items():
                     print(f"Saving branch: {key}")
+                    if "cutflow" in key or "onecut" in key:
+                        fout[key] = array
+                        continue
                     if not array:
                         print(f"WARNING: Branch {key} is empty. Skipping...")
                         continue
