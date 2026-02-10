@@ -155,6 +155,8 @@ By changing the `--file_type` option, you can either make individual plots per s
 
 <span style="color: red;">**Warning:** `trees`, `stacks` not currently implemented.</span>
 
+The configuration file is a YAML file with plot configurations. For an example, you can check `plot_configs/signal_plots.yml`.
+
 ## Corrections and Scale Factors
 
 It is possible to either apply central corrections (derived by CMS) or private corrections (derived locally).
