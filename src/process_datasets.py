@@ -142,17 +142,17 @@ def main():
     output = {}
     # Data processing
     data_output = process_datasets(das_datasets["Data"])
-    for year in data_output:
+    for year, data_per_proc in data_output.items():
         if year not in output:
             output[year] = {}
-        output[year].update(data_output[year])
+        output[year].update(data_per_proc)
 
     # MC processing
-    mc_output = process_datasets(das_datasets["MC"])
-    for year in mc_output:
+    mc_output = process_mc(das_datasets["MC"])
+    for year, mc_per_proc in mc_output.items():
         if year not in output:
             output[year] = {}
-        output[year].update(mc_output[year])
+        output[year].update(mc_per_proc)
 
     with open(args.main_config["fw_dir"]+'/config/datasets/Nominal.json',
             "w", encoding="utf-8") as outfile:
