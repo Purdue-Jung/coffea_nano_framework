@@ -12,6 +12,7 @@ Framework for event-wise transformations on NanoAOD data tier format using Coffe
 - [Running selection](#running-selection)
 - [Control histograms](#control-histograms)
 - [Trigger](#trigger)
+- [Plotting](#plotting)
 
 [Corrections and Scale Factors](#corrections-and-scale-factors)
 
@@ -126,7 +127,33 @@ As default, the selector class would generate `cutflow`, `onecut`, and `nminuson
 
 ### Trigger
 
-As of now, the selector loads a configuration file for trigger selection (`/config/selection/HLT.yml`) as `selection.processor.SelectionProcessor.cfg["HLT"]`. Check [$t\bar{t}$ dilepton selection](../selectors/dilepton.py) for current implementation, but it is still Work-In-Progress.
+As of now, the selector loads a configuration file for trigger selection (`/config/selection/HLT.yml`) as `selection.processor.SelectionProcessor.cfg["HLT"]`. Check [$h\to\tau\tau$ selection](../selectors/htautau.py) for current implementation, but it is still Work-In-Progress.
+
+### Plotting
+By using `src/make_plotting.py`, basic plots can be generated:
+
+```
+$ python src/make_plotting.py -h
+usage: make_plotting.py [-h] [-e ERAS] [--do_sub_era] [--file_type FILE_TYPE] [--sample SAMPLE] [--debug] config_file
+
+Make tree in a slurm job (selection)
+
+positional arguments:
+  config_file           Path to configuration YAML file.
+
+options:
+  -h, --help            show this help message and exit
+  -e, --eras ERAS
+  --do_sub_era          Whether to do sub-era plots.
+  --file_type FILE_TYPE
+                        Type of file to process: 'nanoaod', 'trees', 'stacks'.
+  --sample SAMPLE       Sample to plot (for not stacks).
+  --debug               Whether to run in debug mode (only one file).
+```
+
+By changing the `--file_type` option, you can either make individual plots per sample using either NanoAOD files (`nanoaod` option) or the output from your selector (`trees` option). To make stack plots, you can pass the option `stacks`, for which it would process all MC and data.
+
+<span style="color: red;">**Warning:** `trees`, `stacks` not currently implemented.</span>
 
 ## Corrections and Scale Factors
 

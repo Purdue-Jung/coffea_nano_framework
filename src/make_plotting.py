@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument("--do_sub_era", action="store_true",
                         help="Whether to do sub-era plots.")
     parser.add_argument("--file_type", type=str, default="nanoaod",
-                        help="Type of file to process: 'nanoaod' or 'trees'.")
+                        help="Type of file to process: 'nanoaod', 'trees' or 'stacks'.")
     parser.add_argument("--sample", type=str, default="", help="Sample to plot (for not stacks).")
     parser.add_argument("--debug", action="store_true",
                         help="Whether to run in debug mode (only one file).")

@@ -1,0 +1,1 @@
+python src/make_plotting.py plot_configs/signal_plots.yml -e 2024 --sample VBFH-HTo2Tau

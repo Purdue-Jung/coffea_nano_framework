@@ -36,7 +36,7 @@ def make_plot(histogram, era, config, output_path, args, data=False):
     else:
         ax.set_ylabel("Events")
 
-    ax.set_title(config['title'])
+    ax.legend([config['title']])
     fig.tight_layout()
     plt.savefig(output_path)
     plt.close(fig)
@@ -104,5 +104,5 @@ def make_plotting(args):
             lumi_weight = args.lumis[era] * args.xsecs[sample_name] / histo.sum().value
             histo = histo * lumi_weight
             if not 'title' in config:
-                config['title'] = f"{sample_name} ({era})"
-            make_plot(histo, era, config, output_path, args, data=not "run" in sample_name)
+                config['title'] = f"{sample_name}"
+            make_plot(histo, era, config, output_path, args, data="run" in sample_name)
