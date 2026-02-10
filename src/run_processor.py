@@ -131,7 +131,8 @@ def main(input_file=None, output="", output_histos="", metadata=None) -> None:
                         print(f"WARNING: Branch {key} is empty. Skipping...")
                         continue
                     try:
-                        fout[key] = array
+                        # fout[key] = array
+                        fout.mktree(key, array)
                     except Exception as e:
                         print(f"ERROR: Could not save branch {key}. Error: {e}")
                         print(array)
