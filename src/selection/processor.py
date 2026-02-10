@@ -7,10 +7,12 @@ import hist
 import dask
 import awkward as ak
 import copy
+from uncertainties import ufloat
 from coffea import processor
-from coffea.analysis_tools import PackedSelection
+from coffea.analysis_tools import PackedSelection, Weights
 from selection.selection_utils import apply_golden_json, detector_defects_mask,\
     make_weights_fields, make_snapshot
+from common.utils import convert_hist_to_uarray, convert_uarray_to_hist
 
 class step:
     """
@@ -95,7 +97,8 @@ class SelectionProcessor(processor.ProcessorABC):
                     self.cfg['structure'], empty_reco=True
                 )
 
-    def make_snapshot(self, events, step_label, step_name=""):
+    def make_snapshot(self, events, step_label, step_name="",
+                    save_cutflow=False, cutflow_weight="eventWeight"):
         """Create a snapshot of events at the current selection step"""
         for chan in self.channels:
             if chan not in self.tree:
@@ -106,6 +109,29 @@ class SelectionProcessor(processor.ProcessorABC):
                 selected_events,
                 self.cfg['structure']
             )
+        if save_cutflow:
+            cf_weight = Weights(len(events))
+            cf_weight.add(cutflow_weight, events[cutflow_weight])
+            for chan in self.channels:
+                cutflow_obj = self.selector.cutflow(*self.steps[step_label].mask_labels[chan],
+                                                weights=cf_weight, weightsmodifier=None)
+                onecut, cutflow, labels = cutflow_obj.yieldhist()
+                print(cutflow, labels)
+                print(cutflow.axes)
+                self.tree[chan]["cutflow_" + step_name] = cutflow
+                self.tree[chan]["onecut_" + step_name] = onecut
+                cutflow_eff = convert_uarray_to_hist(
+                    cutflow, convert_hist_to_uarray(cutflow) / ufloat(cutflow[0].value,
+                                                                    cutflow[0].variance**0.5)
+                )
+                onecut_eff = convert_uarray_to_hist(
+                    onecut, convert_hist_to_uarray(onecut) / ufloat(cutflow[0].value,
+                                                                    cutflow[0].variance**0.5)
+                )
+
+                self.tree[chan]["cutflow_efficiency_" + step_name] = cutflow_eff
+                self.tree[chan]["onecut_efficiency_" + step_name] = onecut_eff
+
 
     def init_selection(self, metadata=None):
         """Initialize the main event selection process"""
