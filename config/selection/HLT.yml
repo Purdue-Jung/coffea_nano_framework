@@ -1,2 +1,53 @@
 HLT:
-  '2024':
+  "2024":
+    se:
+      datasets:
+        - EGamma
+        - Muon
+      triggers:
+        # - Ele32_WPTight_Gsf
+        - Ele30_WPTight_Gsf
+    smu:
+      datasets:
+        - Muon
+      triggers:
+        - IsoMu24
+    ee:
+      datasets:
+        - EGamma
+      triggers:
+        - Ele23_Ele12_CaloIdL_TrackIdL_IsoVL
+    emu:
+      datasets:
+        - EGamma
+        - MuonEG
+        - Muon
+      triggers:
+        - Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ
+        - Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ
+        # - Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ
+    mumu:
+      datasets:
+        - Muon
+      triggers:
+        - Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8
+    mutau:
+      datasets:
+        - Muon
+        - Tau
+      triggers:
+        - IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
+    etau:
+      datasets:
+        - EGamma
+        - Tau
+      triggers:
+        - Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
+        - Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1
+    tautau:
+      datasets:
+        - Tau
+      triggers:
+        - DoubleMediumDeepTauPFTauHPS35_L2NN_eta2p1
+        - DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60
+        - DoublePNetTauhPFJet30_Medium_L2NN_eta2p3
