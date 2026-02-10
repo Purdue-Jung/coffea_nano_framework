@@ -209,3 +209,4 @@ __marimo__/
 # Other
 *.out
 notebooks/test
+plots/
