@@ -27,4 +27,8 @@ tree:
   lbarTauJetFakeWeight: "lbar.tauJetFakeWeight"
   puWeight: "puWeight"
   genWeight: "genWeight"
+  genParticle: "GenPart."
+  lheParticle: "LHEPart."
+  met: "PuppiMET."
+  eventWeight: "eventWeight"
   # eftWeight: "eftWeight."
