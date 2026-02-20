@@ -2,6 +2,18 @@
 
 Framework for event-wise transformations on NanoAOD data tier format using Coffea and awkward arrays.
 
+## Setup
+
+Every time you want to run the framework, use `pixi shell` in the framework directory to access the required environment. The first time you run it, it would install all necessary libraries so it can take some time, after that it would be fast.
+
+The first time, you have to run:
+
+```
+python configure.py
+```
+
+The script would ask you some questions that you can skip to leave all default configuration. Moreover, you can run with `-d` at the end for no questions.
+
 ## Table of Contents
 
 [Basic Usage](#basic-usage)
@@ -28,7 +40,7 @@ Also, for further large scale processing, it is necessary to specify the followi
 
 - `tree_dir`: path where to create selection folders.
 - `control_hist_dir`: path where to create control histogram folders.
-- `selector_script`: path to `selector.py` with a class called `Selector`.
+- `selector`: name of `selector.py` with a class called `Selector`.
 
 ### TTree Structure
 
