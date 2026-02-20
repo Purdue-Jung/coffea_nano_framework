@@ -4,6 +4,7 @@
 import os
 import argparse
 import yaml
+import json
 import common.utils as utils
 
 
@@ -16,6 +17,8 @@ def argparser():
                         help="Data-taking era (default: empty)")
     parser.add_argument("--channels", type=str, default="ee,emu,mumu",
                         help="Channels to be processed, comma-separated (default: ee,emu,mumu)")
+    parser.add_argument("--signal_only", action="store_true",
+                        help="Process only signal samples (default: False)")
     args = parser.parse_args()
     return args
 
@@ -30,27 +33,35 @@ def main():
 
     channels = args.channels.split(",") if args.channels else ["ee", "emu", "mumu"]
 
-    with open(fw_config["fw_dir"]+"/config/ntuples/datasets/Nominal.yml",
+    with open(fw_config["fw_dir"]+"/config/ntuples/datasets/Nominal.json",
               "r", encoding='utf-8') as f:
-        datasets = yaml.full_load(f)
+        datasets = json.load(f)
+    
+    if args.era and args.era in datasets:
+        datasets = {args.era: datasets[args.era]}
+    elif args.era:
+        raise ValueError(f"Era {args.era} not found in datasets configuration.")
 
     signals = [subproc for proc in fw_config["signals"] for subproc in processes[proc]]
 
     command_file = ""
 
     processed_files = []
-    for process in datasets:
-        print(f"Dataset: {process}\n")
-        for era in datasets[process]:
-            if args.era and era != args.era:
-                continue
-            print(f"Era: {era}\n")
+    for era, dataset in datasets.items():
+        print(f"Era: {era}\n")
+        for process, info in dataset.items():
+            print(f"Dataset: {process}\n")
             metadata = {"era": era,
                         "process": process,
                         "isData": "run" in process,
                         "isSignal": process in signals,
                         }
-            ntuple_dir = fw_config["ntuples_dir"].replace("<era>",era) + "/Nominal"
+            if args.signal_only and not metadata["isSignal"]:
+                print(f"Skipping non-signal process {process} as per --signal_only flag.\n")
+                continue
+            files = info["files"]
+            sizes = info["sizes"]
+            nevents = info["nevents"]
             minitree_dir = fw_config["minitree_dir"].replace("<era>",era)
             control_hist_dir = fw_config["control_hist_dir"].replace("<era>",era)
             status_dir = fw_config["fw_dir"]+"/selection_status/"

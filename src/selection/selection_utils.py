@@ -85,18 +85,23 @@ def dilepton_pairing(lepton):
         _field = lepton[field]
         _neg_field = ak.pad_none(_field[lepton.charge == -1], target=1, axis=1)
         _pos_field = ak.pad_none(_field[lepton.charge == 1], target=1, axis=1)
-        _neg_field = ak.fill_none(_neg_field, -999)
-        _pos_field = ak.fill_none(_pos_field, -999)
+        if "weight" in field.lower():
+            _neg_field = ak.fill_none(_neg_field, 1.0)
+            _pos_field = ak.fill_none(_pos_field, 1.0)
+        else:
+            _neg_field = ak.fill_none(_neg_field, -999)
+            _pos_field = ak.fill_none(_pos_field, -999)
         lep[field] = _neg_field[:,0] # pylint: disable=unsubscriptable-object
         lbar[field] = _pos_field[:,0] # pylint: disable=unsubscriptable-object
     return ak.zip(lep), ak.zip(lbar)
 
-def lepton_merging(events, include_tau=True, sort_by_corr_pt=True):
+def lepton_merging(events, include_tau=True, sort_by_corr_pt=True,
+                e_field="Electron", mu_field="Muon", tau_field="Tau"):
     """Merge all leptons (e,mu,tau) into a single lepton collection sorted by Pt."""
     ## Lepton objects
     lepton_fields = []
-    e_fields = list(events.Electron.fields)
-    mu_fields = list(events.Muon.fields)
+    e_fields = list(events[e_field].fields)
+    mu_fields = list(events[mu_field].fields)
 
     for field in e_fields:
         if field in mu_fields and field not in lepton_fields or "Weight" in field:
@@ -108,11 +113,11 @@ def lepton_merging(events, include_tau=True, sort_by_corr_pt=True):
     if include_tau:
         # Remove fields that are not common between (e,mu) and tau
         events = add_to_obj(
-            events, "Tau", {
-                "pdgId": -events.Tau.charge * 15
+            events, tau_field, {
+                "pdgId": -events[tau_field].charge * 15
             }
         )
-        tau_fields = list(events.Tau.fields)
+        tau_fields = list(events[tau_field].fields)
         _new_lepton_fields = []
         for field in lepton_fields:
             if field in tau_fields and field not in _new_lepton_fields or "Weight" in field:
@@ -123,13 +128,13 @@ def lepton_merging(events, include_tau=True, sort_by_corr_pt=True):
         lepton_fields = _new_lepton_fields
 
     lepton = {}
-    lepton["pt"] = ak.concatenate([events.Electron.pt, events.Muon.pt], axis=1)
+    lepton["pt"] = ak.concatenate([events[e_field].pt, events[mu_field].pt], axis=1)
     pt_argsort = ak.argsort(lepton["pt"], axis=1, ascending=False)
     if sort_by_corr_pt:
-        e_corr_pt = events.Electron.corr_pt if "corr_pt" in events.Electron.fields \
-            else events.Electron.pt
-        mu_corr_pt = events.Muon.corr_pt if "corr_pt" in events.Muon.fields \
-            else events.Muon.pt
+        e_corr_pt = events[e_field].corr_pt if "corr_pt" in events[e_field].fields \
+            else events[e_field].pt
+        mu_corr_pt = events[mu_field].corr_pt if "corr_pt" in events[mu_field].fields \
+            else events[mu_field].pt
         lepton["corr_pt"] = ak.concatenate(
             [e_corr_pt, mu_corr_pt], axis=1)
         pt_argsort = ak.argsort(lepton["corr_pt"], axis=1, ascending=False)
@@ -138,21 +143,21 @@ def lepton_merging(events, include_tau=True, sort_by_corr_pt=True):
     for field in lepton_fields:
         if field == "pt":
             continue
-        muon_arr = events.Muon[field] if field in events.Muon.fields \
-            else ak.ones_like(events.Muon.pt)
-        elec_arr = events.Electron[field] if field in events.Electron.fields \
-            else ak.ones_like(events.Electron.pt)
+        muon_arr = events[mu_field][field] if field in events[mu_field].fields \
+            else ak.ones_like(events[mu_field].pt)
+        elec_arr = events[e_field][field] if field in events[e_field].fields \
+            else ak.ones_like(events[e_field].pt)
         lepton[field] = ak.concatenate( # pylint: disable=unsubscriptable-object
             [elec_arr,muon_arr],
             axis=1)[pt_argsort]
 
     if include_tau:
         # Adds taus to the lepton collection
-        lepton["pt"] = ak.concatenate([lepton["pt"], events.Tau.pt], axis=1)
+        lepton["pt"] = ak.concatenate([lepton["pt"], events[tau_field].pt], axis=1)
         pt_argsort = ak.argsort(lepton["pt"], axis=1, ascending=False)
         if sort_by_corr_pt:
-            tau_corr_pt = events.Tau.corr_pt if "corr_pt" in events.Tau.fields \
-                else events.Tau.pt
+            tau_corr_pt = events[tau_field].corr_pt if "corr_pt" in events[tau_field].fields \
+                else events[tau_field].pt
             lepton["corr_pt"] = ak.concatenate(
                 [lepton["corr_pt"], tau_corr_pt], axis=1)
             pt_argsort = ak.argsort(lepton["corr_pt"], axis=1, ascending=False)
@@ -161,8 +166,8 @@ def lepton_merging(events, include_tau=True, sort_by_corr_pt=True):
         for field in lepton_fields:
             if field == "pt":
                 continue
-            tau_arr = events.Tau[field] if field in events.Tau.fields \
-                else ak.ones_like(events.Tau.pt)
+            tau_arr = events[tau_field][field] if field in events[tau_field].fields \
+                else ak.ones_like(events[tau_field].pt)
             lepton[field] = ak.concatenate( # pylint: disable=unsubscriptable-object
                 [lepton[field], tau_arr],
                 axis=1)[pt_argsort]

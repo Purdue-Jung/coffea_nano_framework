@@ -63,31 +63,35 @@ def btagging(events, jets_field, tagger, working_point, cfg, correction_type="sh
 
     if cfg["isData"] == "True":
         events = add_to_obj(
-            events, jets_field, {'bShapeWeight': ak.ones_like(jets.pt),
-                                'bKinfFitWeight': ak.ones_like(jets.pt)}
+            events, jets_field, {'bShapeWeight': ak.ones_like(jets.corr_pt),
+                                'bKinfFitWeight': ak.ones_like(jets.corr_pt)}
         )
     else:
         score = jets[tagger_fields[tagger]]
         nan_mask = np.isnan(score)
+        neg_mask = score < 0.0
         score = ak.where(nan_mask, 0.0, score)
+        score = ak.where(neg_mask, 0.0, score)
         match correction_type:
             case "shape":
                 weights = btag_shape.evaluate(
-                    "central", jets.hadronFlavour, np.abs(jets.eta), jets.pt, score
+                    "central", jets.hadronFlavour, np.abs(jets.eta), jets.corr_pt, score
                 )
                 events = add_to_obj(
                     events, jets_field, {'bShapeWeight': ak.where(
-                                        nan_mask, 1.0, weights
+                                        nan_mask | neg_mask, 1.0, weights
                                     )
                                     }
                 )
             case "kinfit":
+                valid_hadronFlavour = jets.hadronFlavour == 5
                 weights = btag_shape.evaluate(
-                    "central", working_point, jets.hadronFlavour, np.abs(jets.eta), jets.pt
+                    "central", working_point, 5, np.abs(jets.eta), jets.corr_pt
                 )
+                weights = ak.where(valid_hadronFlavour, weights, 1.0)
                 events = add_to_obj(
                     events, jets_field, {'bKinfFitWeight': ak.where(
-                                        nan_mask, 1.0, weights
+                                        nan_mask | neg_mask, 1.0, weights
                                     )
                                     }
                 )

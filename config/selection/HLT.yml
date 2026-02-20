@@ -42,7 +42,6 @@ HLT:
         - EGamma
         - Tau
       triggers:
-        - Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
         - Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1
     tautau:
       datasets:

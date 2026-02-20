@@ -76,6 +76,19 @@ class SelectionProcessor(processor.ProcessorABC):
                     self.weighted_events[key].fill([0.5], weight=[value])
             else:
                 self.weighted_events = None
+    
+    # def getWeightedEvents(self, events):
+    #     """Obtains total weighted events manually"""
+
+    #     if self.cfg["isData"] == "False":
+    #         self.weighted_events = {
+    #             # "run": None,
+    #             "genEventCount": len(events),
+    #             "genEventSumw": ak.sum(events.genWeight),
+    #             "genEventSumw2": ak.sum(events.genWeight**2),
+    #             "nLHEScaleSumw": 
+    #         }
+            
 
     def step0_snapshot(self, events):
         """Create a snapshot of events after initial selection"""
@@ -130,6 +143,27 @@ class SelectionProcessor(processor.ProcessorABC):
 
                 self.tree[chan]["cutflow_efficiency_" + step_name] = cutflow_eff
                 self.tree[chan]["onecut_efficiency_" + step_name] = onecut_eff
+
+                cutflow_obj = self.selector.cutflow(*self.steps[step_label].mask_labels[chan])
+                onecut, cutflow, labels = cutflow_obj.yieldhist()
+                print(cutflow, labels)
+                print(cutflow.axes)
+                self.tree[chan]["cutflow_unweighted_" + step_name] = copy.deepcopy(cutflow)
+                self.tree[chan]["onecut_unweighted_" + step_name] = copy.deepcopy(onecut)
+                cutflow_eff = convert_uarray_to_hist(
+                    cutflow_eff, convert_hist_to_uarray(cutflow,
+                                                    poisson=True) / ufloat(cutflow[0],
+                                                                    cutflow[0]**0.5)
+                )
+                onecut_eff = convert_uarray_to_hist(
+                    onecut_eff, convert_hist_to_uarray(onecut,
+                                                    poisson=True) / ufloat(cutflow[0],
+                                                                    cutflow[0]**0.5)
+                )
+
+                self.tree[chan]["cutflow_efficiency_unweighted_" + step_name] = cutflow_eff
+                self.tree[chan]["onecut_efficiency_unweighted_" + step_name] = onecut_eff
+                # self.tree[chan]["cutflow_labels_"+step_name] = labels
 
 
     def init_selection(self, metadata=None):

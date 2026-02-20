@@ -22,13 +22,6 @@ def load_cfg(fw_dir, args):
     with open(fw_dir+"/config/selection/tree_structure.yml", "r", encoding="utf-8") as f:
         cfg["structure"] = yaml.safe_load(f)["tree"]
 
-    try:
-        with open(fw_dir+"/config/workingPoints/BTag.json", "r", encoding="utf-8") as f:
-            cfg["btag"] = json.load(f)
-    except FileNotFoundError:
-        cfg["btag"] = {}
-        print("BTag working points file not found, proceeding without btag config.")
-
     with open(fw_dir+"/config/selection/weights.yml", "r", encoding="utf-8") as f:
         cfg["weights"] = yaml.safe_load(f)["Weights"]
 
@@ -47,7 +40,8 @@ def load_cfg(fw_dir, args):
 
 def load_processor(fw_config):
     """Dynamically load the user processor."""
-    file_path = pathlib.Path(fw_config["selector_script"])
+    selector_script = fw_config["fw_dir"]+"/selectors/"+fw_config["selector"]+".py"
+    file_path = pathlib.Path(selector_script)
 
     # Create a module spec from the file
     spec = importlib.util.spec_from_file_location("user_module", file_path)
