@@ -40,7 +40,8 @@ def load_cfg(fw_dir, args):
 
 def load_processor(fw_config):
     """Dynamically load the user processor."""
-    file_path = pathlib.Path(fw_config["selector_script"])
+    selector_script = fw_config["fw_dir"]+"/selectors/"+fw_config["selector"]+".py"
+    file_path = pathlib.Path(selector_script)
 
     # Create a module spec from the file
     spec = importlib.util.spec_from_file_location("user_module", file_path)
