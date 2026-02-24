@@ -42,7 +42,7 @@ electron:
       - 'corr_pt'
       - 'phi'
   '2024':
-    file: "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-03/electron.json.gz"
+    file: "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electron.json.gz"
     correction_name: "Electron-ID-SF"
     year: "2024Prompt"
     inputs:
@@ -52,7 +52,7 @@ electron:
       - 'SCeta'
       - 'corr_pt'
   '2025':
-    file: "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-03/electron.json.gz"
+    file: "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electron.json.gz"
     correction_name: "Electron-ID-SF"
     year: "2024Prompt"
     inputs:

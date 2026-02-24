@@ -59,12 +59,10 @@ def tau_sf_corr(events, working_points: dict, cfg: dict, dependency="pt"):
     )
     events["Tau", "tauJetFakeWeight"] = tau_vs_jet_sf
     # Energy scale correction
-    # Due to pythia bug, we set scale to 1
-    # https://twiki.cern.ch/twiki/bin/view/CMS/TauIDRecommendationForRun3#Decay_mode_selection
-    tau_e_scale = 0*tau_corr["tau_energy_scale"].evaluate(
+    tau_e_scale = tau_corr["tau_energy_scale"].evaluate(
         tau.pt, tau.eta, tau.decayMode, tau.genPartFlav, "DeepTau2018v2p5",
         working_points["jet_to_tau"], working_points["e_to_tau"], "nom"
-    ) + 1.0
+    )
     events["Tau", "corr_pt"] = tau.pt * tau_e_scale
     events["Tau", "corr_mass"] = tau.mass * tau_e_scale
     events["Tau", "scale_correction"] = tau_e_scale
