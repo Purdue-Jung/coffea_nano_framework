@@ -4,7 +4,7 @@
 import correctionlib
 import yaml
 import numpy as np
-from selection_utils import add_to_obj
+from selection.selection_utils import add_to_obj
 
 def electron_sf(obj, working_point, cfg):
     """

@@ -22,13 +22,6 @@ def load_cfg(fw_dir, args):
     with open(fw_dir+"/config/selection/tree_structure.yml", "r", encoding="utf-8") as f:
         cfg["structure"] = yaml.safe_load(f)["tree"]
 
-    try:
-        with open(fw_dir+"/config/workingPoints/BTag.json", "r", encoding="utf-8") as f:
-            cfg["btag"] = json.load(f)
-    except FileNotFoundError:
-        cfg["btag"] = {}
-        print("BTag working points file not found, proceeding without btag config.")
-
     with open(fw_dir+"/config/selection/weights.yml", "r", encoding="utf-8") as f:
         cfg["weights"] = yaml.safe_load(f)["Weights"]
 
@@ -47,7 +40,8 @@ def load_cfg(fw_dir, args):
 
 def load_processor(fw_config):
     """Dynamically load the user processor."""
-    file_path = pathlib.Path(fw_config["selector_script"])
+    selector_script = fw_config["fw_dir"]+"/selectors/"+fw_config["selector"]+".py"
+    file_path = pathlib.Path(selector_script)
 
     # Create a module spec from the file
     spec = importlib.util.spec_from_file_location("user_module", file_path)
@@ -67,9 +61,20 @@ def parse_args():
     parser.add_argument("--metadata", type=str, default="", help="Metadata file (default: empty)")
     return parser.parse_args()
 
-def main() -> None:
-    """Main function to run the user processor."""
-    args = parse_args()
+def main(input_file=None, output="", output_histos="", metadata=None) -> None:
+    """Main function to run the user processor.
+    
+    Args:
+        input_file: Input NanoAOD file path (required if not using command line args)
+        output: Output tree tag
+        output_histos: Output histograms tag
+        metadata: Metadata dict or string (comma-separated key:value pairs)
+    """
+    if input_file is None:
+        args = parse_args()
+    else:
+        args = argparse.Namespace(input=input_file, output=output, output_histos=output_histos, metadata=metadata)
+
     args.metadata = args.metadata.split(",") if args.metadata else []
 
     args.metadata = {item.split(":")[0]: item.split(":")[1]
@@ -104,7 +109,7 @@ def main() -> None:
         # store outputs per channel
         for chan in output["channels"]:
             chan_file = tree_cfg['tag'].replace('<chan>/',f'{chan}/')
-            filename = chan + "_" + chan_file.split('/')[-1]
+            filename = chan + "_" + chan_file.split('/')[-1].replace('.root','')
             chan_file = '/'.join(chan_file.split('/')[:-1]) + '/' + filename
             with uproot.recreate(f"{chan_file}.root") as fout:
                 print(f"Saving final tree {chan}...")
@@ -116,11 +121,15 @@ def main() -> None:
 
                 for key, array in output["tree"][chan].items():
                     print(f"Saving branch: {key}")
+                    if "cutflow" in key or "onecut" in key:
+                        fout[key] = array
+                        continue
                     if not array:
                         print(f"WARNING: Branch {key} is empty. Skipping...")
                         continue
                     try:
-                        fout[key] = array
+                        # fout[key] = array
+                        fout.mktree(key, array)
                     except Exception as e:
                         print(f"ERROR: Could not save branch {key}. Error: {e}")
                         print(array)

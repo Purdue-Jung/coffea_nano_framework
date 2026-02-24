@@ -4,7 +4,7 @@
 import correctionlib
 import yaml
 from external.MuonScaRe import pt_resol, pt_scale
-from selection_utils import add_to_obj
+from selection.selection_utils import add_to_obj
 
 
 def muon_sf(obj, sf_name, cfg, pt_field="corr_pt"):

@@ -2,6 +2,18 @@
 
 Framework for event-wise transformations on NanoAOD data tier format using Coffea and awkward arrays.
 
+## Setup
+
+Every time you want to run the framework, use `pixi shell` in the framework directory to access the required environment. The first time you run it, it would install all necessary libraries so it can take some time, after that it would be fast.
+
+The first time, you have to run:
+
+```
+python configure.py
+```
+
+The script would ask you some questions that you can skip to leave all default configuration. Moreover, you can run with `-d` at the end for no questions.
+
 ## Table of Contents
 
 [Basic Usage](#basic-usage)
@@ -12,6 +24,7 @@ Framework for event-wise transformations on NanoAOD data tier format using Coffe
 - [Running selection](#running-selection)
 - [Control histograms](#control-histograms)
 - [Trigger](#trigger)
+- [Plotting](#plotting)
 
 [Corrections and Scale Factors](#corrections-and-scale-factors)
 
@@ -27,7 +40,7 @@ Also, for further large scale processing, it is necessary to specify the followi
 
 - `tree_dir`: path where to create selection folders.
 - `control_hist_dir`: path where to create control histogram folders.
-- `selector_script`: path to `selector.py` with a class called `Selector`.
+- `selector`: name of `selector.py` with a class called `Selector`.
 
 ### TTree Structure
 
@@ -126,7 +139,35 @@ As default, the selector class would generate `cutflow`, `onecut`, and `nminuson
 
 ### Trigger
 
-As of now, the selector loads a configuration file for trigger selection (`/config/selection/HLT.yml`) as `selection.processor.SelectionProcessor.cfg["HLT"]`. Check [$t\bar{t}$ dilepton selection](../selectors/dilepton.py) for current implementation, but it is still Work-In-Progress.
+As of now, the selector loads a configuration file for trigger selection (`/config/selection/HLT.yml`) as `selection.processor.SelectionProcessor.cfg["HLT"]`. Check [$h\to\tau\tau$ selection](../selectors/htautau.py) for current implementation, but it is still Work-In-Progress.
+
+### Plotting
+By using `src/make_plotting.py`, basic plots can be generated:
+
+```
+$ python src/make_plotting.py -h
+usage: make_plotting.py [-h] [-e ERAS] [--do_sub_era] [--file_type FILE_TYPE] [--sample SAMPLE] [--debug] config_file
+
+Make tree in a slurm job (selection)
+
+positional arguments:
+  config_file           Path to configuration YAML file.
+
+options:
+  -h, --help            show this help message and exit
+  -e, --eras ERAS
+  --do_sub_era          Whether to do sub-era plots.
+  --file_type FILE_TYPE
+                        Type of file to process: 'nanoaod', 'trees', 'stacks'.
+  --sample SAMPLE       Sample to plot (for not stacks).
+  --debug               Whether to run in debug mode (only one file).
+```
+
+By changing the `--file_type` option, you can either make individual plots per sample using either NanoAOD files (`nanoaod` option) or the output from your selector (`trees` option). To make stack plots, you can pass the option `stacks`, for which it would process all MC and data.
+
+<span style="color: red;">**Warning:** `trees`, `stacks` not currently implemented.</span>
+
+The configuration file is a YAML file with plot configurations. For an example, you can check `plot_configs/signal_plots.yml`.
 
 ## Corrections and Scale Factors
 

@@ -210,3 +210,4 @@ __marimo__/
 *.root
 *.out
 notebooks/test
+plots/

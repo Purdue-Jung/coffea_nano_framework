@@ -3,15 +3,52 @@
 """
 import numpy as np
 import awkward as ak
-from processor import SelectionProcessor
-from object_selection import trailing_selection
-from selection_utils import lepton_merging, dilepton_pairing, get_4vector_sum,\
+import numba
+from selection.processor import SelectionProcessor
+from selection.selection_utils import lepton_merging, dilepton_pairing, get_4vector_sum,\
     delta_r, add_to_obj, update_collection
-import corrections.JME as JME
-import corrections.LUM as LUM
-import corrections.EGM as EGM
-import corrections.MUO as MUO
-import corrections.TAU as TAU
+from corrections import LUM, EGM, MUO, TAU, JME, BTV
+from common.variables import get_variable
+
+@numba.njit
+def find_vbf_jets_kernel(events_jets, builder):
+    """
+    Search for the pair of jets with the highest invariant mass and return a boolean mask
+    where True indicates the pair of jets with the highest invariant mass.
+    """
+    for jets in events_jets:
+        builder.begin_list()
+        njets = len(jets)
+        if njets < 2:
+            for i in range(njets):
+                builder.boolean(False)
+            builder.end_list()
+            continue
+        if njets == 2:
+            builder.boolean(True)
+            builder.boolean(True)
+            builder.end_list()
+            continue
+        max_idx = (-1, -1)
+        max_mjj = 0.0
+        for i0 in range(njets):
+            for i1 in range(i0+1, njets):
+                jet1 = jets[i0]
+                jet2 = jets[i1]
+                mjj = np.sqrt(
+                    2*jet1.corr_pt*jet2.corr_pt*(
+                        np.cosh(jet1.eta - jet2.eta) - np.cos(jet1.phi - jet2.phi)
+                    )
+                )
+                if mjj > max_mjj:
+                    max_mjj = mjj
+                    max_idx = (i0, i1)
+        i0, i1 = max_idx
+        for i in range(njets):
+            builder.boolean(i == i0 or i == i1)
+        builder.end_list()
+    return builder
+
 
 class Selector(SelectionProcessor):
     """Processor for dilepton ttbar event selection and tree creation."""
@@ -31,23 +68,43 @@ class Selector(SelectionProcessor):
         events = EGM.electron_corr(events, self.cfg)
         ## Electron selection
         electron = events.Electron
+        n_electrons = ak.sum(ak.num(electron))
         # Pt cut
         electron = electron[electron.corr_pt >= 10.0]
+        print(f"Electron pt selection efficiency: {ak.sum(ak.num(electron))*100/n_electrons:.2f}%")
         # Eta cut
         electron = electron[np.abs(electron.eta) <= 2.5]
+        print(f"Electron eta selection efficiency: {ak.sum(ak.num(electron))*100/n_electrons:.2f}%")
         # Eta clustering cut
         electron = electron[
             (np.abs(electron.eta) > 1.566) | (np.abs(electron.eta) < 1.4442)
             ]
+        print("Electron eta clustering selection efficiency: "
+            f"{ak.sum(ak.num(electron))*100/n_electrons:.2f}%")
         # ID cut
-        electron = electron[electron.cutBased >= 4] # Tight
-        electron = EGM.electron_sf(electron, "Tight", self.cfg)
+        # electron = electron[electron.cutBased >= 4] # Tight
+        # print(f"Electron ID selection efficiency: "
+        #          f"{ak.sum(ak.num(electron))*100/n_electrons:.2f}%")
         # dxy cut
         electron = electron[np.abs(electron.dxy) <= 0.045]
+        print(f"Electron dxy selection efficiency: {ak.sum(ak.num(electron))*100/n_electrons:.2f}%")
         # dz cut
-        electron = electron[np.abs(electron.dz) <= 0.02]
+        electron = electron[np.abs(electron.dz) <= 0.2]
+        print(f"Electron dz selection efficiency: {ak.sum(ak.num(electron))*100/n_electrons:.2f}%")
         # Iso cut
-        electron = electron[electron.miniPFRelIso_all <= 0.5]
+        # electron = electron[electron.miniPFRelIso_all <= 0.5]
+        electron = electron[electron.mvaNoIso_WP90] # boolean mask
+        electron = EGM.electron_sf(electron, "wp90noiso", self.cfg)
+        print(f"Electron mvaNoIso_WP90 selection efficiency: "
+                f"{ak.sum(ak.num(electron))*100/n_electrons:.2f}%")
+
+        # Conversion Veto
+        electron = electron[electron.convVeto]
+        print(f"Electron conversion veto selection efficiency: "
+                f"{ak.sum(ak.num(electron))*100/n_electrons:.2f}%")
+
+        n_selected_electrons = ak.sum(ak.num(electron))
+        print(f"Electron total selection efficiency: {n_selected_electrons*100/n_electrons:.2f}%")
 
         events = update_collection(events, "Electron", electron)
 
@@ -55,20 +112,29 @@ class Selector(SelectionProcessor):
         ## correction
         events = MUO.muon_corr(events, self.cfg)
         muon = events.Muon
+        n_muons = ak.sum(ak.num(muon))
         # Pt cut
         muon = muon[muon.corr_pt >= 10.0]
+        print(f"Muon pt selection efficiency: {ak.sum(ak.num(muon))*100/n_muons:.2f}%")
         # Eta cut
         muon = muon[np.abs(muon.eta) <= 2.4]
+        print(f"Muon eta selection efficiency: {ak.sum(ak.num(muon))*100/n_muons:.2f}%")
         # Iso cut
         muon = muon[muon.pfRelIso04_all <= 0.5]
+        print(f"Muon isolation selection efficiency: {ak.sum(ak.num(muon))*100/n_muons:.2f}%")
         # ID cut
-        muon = muon[muon.tightId] # boolean mask
-        muon = MUO.muon_sf(muon, "NUM_TightID_DEN_TrackerMuons", self.cfg)
-        muon = MUO.muon_sf(muon, "NUM_TightPFIso_DEN_TightID", self.cfg)
+        muon = muon[muon.mediumId] # boolean mask
+        muon = MUO.muon_sf(muon, "NUM_MediumID_DEN_TrackerMuons", self.cfg)
+        muon = MUO.muon_sf(muon, "NUM_TightPFIso_DEN_MediumID", self.cfg)
+        print(f"Muon ID selection efficiency: {ak.sum(ak.num(muon))*100/n_muons:.2f}%")
         # dxy cut
         muon = muon[np.abs(muon.dxy) <= 0.045]
+        print(f"Muon dxy selection efficiency: {ak.sum(ak.num(muon))*100/n_muons:.2f}%")
         # dz cut
-        muon = muon[np.abs(muon.dz) <= 0.02]
+        muon = muon[np.abs(muon.dz) <= 0.2]
+        print(f"Muon dz selection efficiency: {ak.sum(ak.num(muon))*100/n_muons:.2f}%")
+        n_selected_muons = ak.sum(ak.num(muon))
+        print(f"Muon total selection efficiency: {n_selected_muons*100/n_muons:.2f}%")
 
         events = update_collection(events, "Muon", muon)
 
@@ -76,26 +142,40 @@ class Selector(SelectionProcessor):
         ## correction
         events = TAU.tau_sf_corr(events,
                             working_points={
-                                "e_to_tau": "Tight",
-                                "mu_to_tau": "Tight",
-                                "jet_to_tau": "Tight"
+                                "e_to_tau": "VVLoose",
+                                "mu_to_tau": "VLoose",
+                                "jet_to_tau": "Medium"
                             },
                             cfg=self.cfg,
                             dependency="pt"
                             )
-        
+
         tau = events.Tau
+        n_taus = (ak.sum(ak.num(tau)))
         tauprod = events.TauProd
 
-        tau_criteria = (
-            (tau.pt >= 25.0) & 
-            (np.abs(tau.eta) <= 2.5) & 
-            (tau.idDeepTau2018v2p5VSe >= 6) & 
-            (tau.idDeepTau2018v2p5VSmu >= 4) & 
-            (tau.idDeepTau2018v2p5VSjet >= 6) & 
-            (np.abs(tau.dz) <= 0.02)
-        )
+        tau_criteria = (tau.pt >= 20.0)
+        print(f"Tau pt >= 20 selection efficiency: {ak.sum(tau_criteria)*100/n_taus:.2f}%")
+
+        tau_criteria = tau_criteria & (tau.eta <= 2.5)
+        print(f"Tau eta <= 2.5 selection efficiency: {ak.sum(tau_criteria)*100/n_taus:.2f}%")
+
+        tau_criteria = tau_criteria & (tau.idDeepTau2018v2p5VSe >= 2)
+        print("Tau ID tau vs electron selection efficiency: "
+                f"{ak.sum(tau_criteria)*100/n_taus:.2f}%")
+
+        tau_criteria = tau_criteria & (tau.idDeepTau2018v2p5VSmu >= 1)
+        print(f"Tau ID tau vs muon selection efficiency: {ak.sum(tau_criteria)*100/n_taus:.2f}%")
+
+        tau_criteria = tau_criteria & (tau.idDeepTau2018v2p5VSjet >= 5)
+        print(f"Tau ID tau vs jet selection efficiency: {ak.sum(tau_criteria)*100/n_taus:.2f}%")
+
+        tau_criteria = tau_criteria & (np.abs(tau.dz) <= 0.2)
+        print(f"Tau dz selection efficiency: {ak.sum(tau_criteria)*100/n_taus:.2f}%")
+
         selected_taus = tau[tau_criteria]
+        n_selected_taus = ak.sum(ak.num(selected_taus))
+        print(f"Tau selection efficiency: {n_selected_taus*100/n_taus:.2f}%")
 
         # Modify TauProd_tauIdx
         max_ntau = ak.max(ak.num(tau))
@@ -108,7 +188,7 @@ class Selector(SelectionProcessor):
         tauprod_mask = new_tauprod_tauidx >= 0
         tauprod = tauprod[tauprod_mask]
         new_tauprod_tauidx = new_tauprod_tauidx[tauprod_mask]
-        
+
         assert not ak.any(new_tauprod_tauidx < 0)
         events = update_collection(events, "Tau", selected_taus)
         tauprod = update_collection(tauprod, "tauIdx", new_tauprod_tauidx)
@@ -116,16 +196,24 @@ class Selector(SelectionProcessor):
 
         ## Merge electrons and muons into leptons
         events["lepton"] = lepton_merging(events, include_tau=True)
+        # lep, lbar, llbar would have implicit opposite sign
         events["lep"], events["lbar"] = dilepton_pairing(events.lepton)
         events["llbar"] = get_4vector_sum(events.lep, events.lbar, corrected=True)
 
         ## Define reco channels
         pdg_lep = events.lep.pdgId
         pdg_lbar = events.lbar.pdgId
+        emu = (pdg_lep == 13) & (pdg_lbar == -11) | (pdg_lep == 11) & (pdg_lbar == -13)
+        etau = (pdg_lep == 11) & (pdg_lbar == -15) | (pdg_lep == 15) & (pdg_lbar == -11)
+        mutau = (pdg_lep == 13) & (pdg_lbar == -15) | (pdg_lep == 15) & (pdg_lbar == -13)
+        tautau = (pdg_lep == 15) & (pdg_lbar == -15)
+        other = ~(emu | etau | mutau | tautau)
         self.channels = {
-            "etau": (pdg_lep == 11) & (pdg_lbar == -15) | (pdg_lep == 15) & (pdg_lbar == -11),
-            "mutau": (pdg_lep == 13) & (pdg_lbar == -15) | (pdg_lep == 15) & (pdg_lbar == -13),
-            "tautau": (pdg_lep == 15) & (pdg_lbar == -15)
+            "emu": emu,
+            "etau": etau,
+            "mutau": mutau,
+            "tautau": tautau,
+            "other": other
         }
 
         ## Add to jetsAK4
@@ -139,6 +227,7 @@ class Selector(SelectionProcessor):
 
         ## jetsAK4 selection
         jets = events.Jet
+        n_jets = (ak.sum(ak.num(jets)))
         # Remove Lepton Overlap
         jets_idx = ak.local_index(jets.pt)
         lep_mask = ~(jets_idx == events.lep.jetIdx)
@@ -161,9 +250,9 @@ class Selector(SelectionProcessor):
         # jet energy correction
         jets = JME.jet_jerc(events, jets, self.cfg)
         # Pt cut
-        jets = jets[jets.corr_pt > 30.0]
+        # jets = jets[jets.corr_pt > 30.0]
         # Eta cut
-        jets = jets[np.abs(jets.eta) < 2.5]
+        # jets = jets[np.abs(jets.eta) < 2.5]
         # # cleaning cut
         # jets = jets[
         #     (jets.DeltaR_lep > 0.4) & (jets.DeltaR_lbar > 0.4)
@@ -171,16 +260,38 @@ class Selector(SelectionProcessor):
         # veto map
         jets = jets[JME.veto_map(jets,"jetvetomap",self.cfg)]
 
+        n_selected_jets = ak.sum(ak.num(jets))
+        print(f"Jet selection efficiency: {n_selected_jets*100/n_jets:.2f}%")
+
         events = update_collection(events, "Jet_selected", jets)
 
-        # tagger = "UParTAK4" if self.cfg["era"] in ["2024", "2025"]\
-        #     else "robustParticleTransformer"
-        # corr_type = "kinfit" if self.cfg["era"] in ["2024", "2025"] else "shape"
-        # ## B-Jet selection
-        # print(f"Applying BTV corrections with tagger {tagger} and correction type {corr_type}")
-        # events, bjets = BTV.btagging(events, "Jet_selected", tagger,
-        #                                     "M", self.cfg, correction_type=corr_type)
-        # events["bJetsAK4"] = bjets
+        jets = events.Jet_selected
+        # Select VBF jets
+        vbf_jet_mask = find_vbf_jets_kernel(ak.materialize(jets), ak.ArrayBuilder()).snapshot()
+        jets_vbf = jets[vbf_jet_mask]
+        other_jets = jets[~vbf_jet_mask]
+        events = update_collection(events, "Jet_VBF", jets_vbf)
+        # Pt cut
+        other_jets = other_jets[other_jets.corr_pt > 30.0]
+        # Eta cut
+        other_jets = other_jets[np.abs(other_jets.eta) < 2.5]
+        events = update_collection(events, "Jet_other", other_jets)
+
+
+        events["mjj"] = get_variable(events, "mjj", object_name="Jet_VBF")
+        events["deltaEtajj"] = get_variable(events, "deltaEtajj", object_name="Jet_VBF")
+        events["deltaRjj"] = get_variable(events, "deltaRjj", object_name="Jet_VBF")
+        events["deltaPhijj"] = get_variable(events, "deltaPhijj", object_name="Jet_VBF")
+        events["mT"] = get_variable(events, "mT", object_name=["lepton", "PuppiMET"])
+
+        tagger = "UParTAK4" if self.cfg["era"] in ["2024", "2025"]\
+            else "robustParticleTransformer"
+        corr_type = "kinfit" if self.cfg["era"] in ["2024", "2025"] else "shape"
+        ## B-Jet selection
+        print(f"Applying BTV corrections with tagger {tagger} and correction type {corr_type}")
+        events, bjets = BTV.btagging(events, "Jet_other", tagger,
+                                            "L", self.cfg, correction_type=corr_type)
+        events["bJetsAK4"] = bjets
 
         ## Gen Information (Must Compute It)
         # if self.cfg['isSignal'] == "True":
@@ -233,52 +344,214 @@ class Selector(SelectionProcessor):
             parent="init"
         )
 
-
-        # step1b
-        # self.add_selection_step(
-        #     step_label="Triggers",
-        #     mask={
-        #         chan: self.dilepton_hlt_mask(
-        #             events, chan, self.mappings['HLTPaths'], self.cfg
-        #         )
-        #         for chan in self.channels
-        #     },
-        #     channel_wise=True,
-        #     parent = "METFilters"
-        # )
+        self.add_selection_step(
+            step_label="Triggers",
+            mask={
+                chan: self.dilepton_hlt_mask(
+                    events, chan, self.cfg
+                )
+                for chan in self.channels
+            },
+            channel_wise=True,
+            parent = "METFilters"
+        )
 
         # step1
         self.add_selection_step(
             step_label="PrimaryVertex",
             mask=(events.PV.npvsGood > 0),
-            parent="METFilters"
+            parent="Triggers"
         )
 
         # step3
+        # self.add_selection_step(
+        #     step_label="LeptonInvariantMass",
+        #     mask=(events.llbar.mass > 20),
+        #     parent="PrimaryVertex"
+        # )
+
+        # # mjj step
+        # self.add_selection_step(
+        #     step_label="mjjLoose",
+        #     mask=(events.mjj > 500),
+        #     parent="LeptonInvariantMass"
+        # )
+
+        # mjj tight step
         self.add_selection_step(
-            step_label="LeptonInvariantMass",
-            mask=(events.llbar.mass > 20),
+            step_label="mjjTight",
+            mask=(events.mjj > 700),
             parent="PrimaryVertex"
         )
 
         # step4
+        # self.add_selection_step(
+        #     step_label="JetMultiplicity",
+        #     mask=(ak.num(events.Jet_selected, axis=1) >= 2),
+        #     parent="LeptonInvariantMass"
+        # )
+
         self.add_selection_step(
-            step_label="JetMultiplicity",
-            mask=(ak.num(events.Jet_selected, axis=1) >= 2),
-            parent="LeptonInvariantMass"
+            step_label="LeptonMultiplicity",
+            mask=(ak.num(events.lepton) == 2),
+            parent="mjjTight"
         )
 
-        # self.create_cutflow_histograms(events, step7)
+        # self.add_selection_step(
+        #     step_label="OppositeSign",
+        #     mask=(events.signProduct < 0),
+        #     parent="LeptonMultiplicity"
+        # )
 
-        self.make_snapshot(events, "METFilters", step_name="stepMET")
-        self.make_snapshot(events, "PrimaryVertex", step_name="stepPV")
-        self.make_snapshot(events, "LeptonInvariantMass", step_name="stepLepInvMass")
-        self.make_snapshot(events, "JetMultiplicity", step_name="stepJetMult")
+        self.add_selection_step(
+            step_label="bJetVeto",
+            mask=(ak.num(events.bJetsAK4) == 0),
+            parent="LeptonMultiplicity"
+        )
+
+        self.add_selection_step(
+            step_label="inversebJetVeto",
+            mask=(ak.num(events.bJetsAK4) > 0),
+            parent="LeptonMultiplicity"
+        )
+
+        self.add_selection_step(
+            step_label="mT",
+            mask=(events.mT < 60),
+            parent="bJetVeto"
+        )
+
+        self.add_selection_step(
+            step_label="mT_invbJetVeto",
+            mask=(events.mT < 60),
+            parent="inversebJetVeto"
+        )
+
+        self.add_selection_step(
+            step_label="inversemT",
+            mask=(events.mT > 60),
+            parent="bJetVeto"
+        )
+
+
+
+        # self.make_snapshot(events, "METFilters", step_name="stepMET")
+        # self.make_snapshot(events, "Triggers", step_name="stepHLT")
+        # self.make_snapshot(events, "PrimaryVertex", step_name="stepPV")
+        # self.make_snapshot(events, "LeptonInvariantMass", step_name="stepLepInvMass")
+        # self.make_snapshot(events, "JetMultiplicity", step_name="stepJetMult", save_cutflow=True)
+        self.make_snapshot(events, "init", step_name="init")
+        # self.make_snapshot(events, "METFilters", step_name="METFilters")
+        # self.make_snapshot(events, "Triggers", step_name="Triggers")
+        # self.make_snapshot(events, "PrimaryVertex", step_name="PrimaryVertex")
+        # self.make_snapshot(events, "mjjTight", step_name="mjjTight")
+        # self.make_snapshot(events, "LeptonMultiplicity", step_name="LeptonMultiplicity")
+        # self.make_snapshot(events, "bJetVeto", step_name="bJetVeto")
+        self.make_snapshot(events, "mT", step_name="SR", save_cutflow=True)
+        self.make_snapshot(events, "mT_invbJetVeto", step_name="bJetVeto_CR")
+        self.make_snapshot(events, "inversemT", step_name="mT_CR")
 
         return events
 
-    def dilepton_hlt_mask(self, events, channel, hlt_map, cfg):
+    def dilepton_hlt_mask(self, events, channel, cfg):
         """
         Create HLT mask for dilepton channels
+        Args:
+            events: Awkward Array with event information
+            channel: str, dilepton channel ("ee", "mumu", "emu")
+            hlt_map: dict, mapping of HLT paths to indices
+                (Not really used in current implementation)
+            cfg: dict, configuration dictionary
+        Returns:
+            Awkward Array boolean mask for events passing HLT for the given channel
         """
-        pass
+
+        def false_mask():
+            return ak.full_like(events.event, False, dtype=bool)
+
+        # Build masks for all groups present in cfg["HLT"]
+        # which would be defined in config/selection/HLT.yml
+        tot_masks = {}
+        for grp, grp_hlt in cfg["HLT"].items():
+            # For data, if dataset is incompatible with this group, use false mask
+            if cfg["isData"] == "True":
+                dataset = cfg["process"].split("_")[-1]
+                dataset = dataset[0].upper() + dataset[1:] if dataset else ""
+                if dataset not in grp_hlt["datasets"]:
+                    print(f"Dataset {dataset} not in datasets for group {grp}. Using false mask.")
+                    tot_masks[grp] = false_mask()
+                    continue
+            mask = ak.zeros_like(events.event, dtype=bool)
+            for path in grp_hlt["triggers"]:
+                if path in events.HLT.fields:
+                    mask = mask | events.HLT[path]
+                else:
+                    print(f"WARNING: HLT path {path} not found in events.HLT fields.")
+            tot_masks[grp] = mask
+
+        # Helper to get a mask safely
+        def M(name):
+            return tot_masks.get(name, false_mask())
+
+        ## Be careful with the following logic where data and MC differ in HLT combination
+        # Combine per data/MC and channel
+        if cfg["isData"] == "False":
+            # MC: use union of the groups relevant for this dilepton channel
+            match channel:
+                case "ee":
+                    tot_mask = M("ee") | M("se")
+                case "mumu":
+                    tot_mask = M("mumu") | M("smu")
+                case "emu":
+                    tot_mask = M("emu") | M("se") | M("smu")
+                case "tautau":
+                    tot_mask = M("tautau")
+                case "etau":
+                    tot_mask = M("etau") | M("se") # placeholder, will be defined in data section
+                case "mutau":
+                    tot_mask = M("mutau") | M("smu") # placeholder, will be defined in data section
+                case "other":
+                    tot_mask = M("ee") | M("mumu") | M("se") | M("smu")
+                case _:
+                    raise ValueError(f"Channel {channel} not supported.")
+            return tot_mask
+        else:
+            # Data: dataset-specific logic with anti-overlaps
+            if channel == "ee":
+                match dataset:
+                    case "EGamma":
+                        tot_mask = M("ee") | M("se")
+                    case _:
+                        print(f"Dataset {dataset} not supported for channel {channel} in data."
+                            " Returning false mask.")
+                        # use events.event to create a false mask
+                        tot_mask = false_mask()
+            elif channel == "emu":
+                match dataset:
+                    case "MuonEG":
+                        tot_mask = M("emu")
+                    case "EGamma":
+                        tot_mask = M("se") & ~M("emu")
+                    case "SingleMuon":
+                        tot_mask = M("smu") & ~M("emu") & ~M("se")
+                    case "Muon":
+                        tot_mask = M("smu") & ~M("emu") & ~M("se")
+                    case _:
+                        print(f"Dataset {dataset} not supported for channel {channel} in data. "
+                            "Returning false mask.")
+                        tot_mask = false_mask()
+            elif channel == "mumu":
+                match dataset:
+                    case "Muon":
+                        tot_mask = M("mumu") | M("smu")
+                    case "SingleMuon":
+                        tot_mask = ~M("mumu") & M("smu")
+                    case "DoubleMuon":
+                        tot_mask = M("mumu")
+                    case _:
+                        print(f"Dataset {dataset} not supported for channel {channel} in data. "
+                            "Returning false mask.")
+                        tot_mask = false_mask()
+            else:
+                raise ValueError(f"Channel {channel} not supported.")
+            return tot_mask

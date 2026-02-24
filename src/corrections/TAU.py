@@ -3,7 +3,7 @@
 """
 import correctionlib
 import yaml
-from selection_utils import add_to_obj, update_collection
+from selection.selection_utils import add_to_obj, update_collection
 
 def tau_sf_corr(events, working_points: dict, cfg: dict, dependency="pt"):
     """

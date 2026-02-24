@@ -9,3 +9,4 @@ CrossSections:
   TbarWplus: 43.95 # https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SingleTopRefXsec#tW_channel
   TbarWplusto2L2Nu: 4.71 # Calibration Excel
   TbarWplustoSemilepton: 19.4 # Calibration Excel
+  VBFH-HTo2Tau: 4.18 # XSDB

@@ -1,0 +1,23 @@
+mjj_close:
+  field: "mjj"
+  axis_type: Regular
+  ylabel: "Events"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 300
+  label: "Dijet Mass $m_{jj}$ [GeV]"
+  weights:
+    - genWeight
+
+deltaPhijj:
+  field: "deltaPhijj"
+  axis_type: Regular
+  ylabel: "Events"
+  inputs: # normal input for hist.axis.Regular
+      - 40
+      - 0
+      - 6.3
+  label: "Dijet $\\Delta\\phi_{jj}$"
+  weights:
+    - genWeight

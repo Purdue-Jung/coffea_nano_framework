@@ -27,6 +27,7 @@ def parse_main_config()->dict:
 
             # Split the line into key and value
             config_key, value = line.split('=')
+            value = value.split('#')[0]  # Remove inline comments
 
             # If the key is signals, split the value by commas
             if config_key.strip() in ['signals', 'channels', 'eras']:
@@ -57,7 +58,7 @@ def initial_loading():
 
     return main_config, processes, systematics
 
-def convert_hist_to_uarray(histogram):
+def convert_hist_to_uarray(histogram, poisson=False):
     """
     Coverts a boost-histogram into an uncertainties NumPy uarray
     
@@ -65,9 +66,13 @@ def convert_hist_to_uarray(histogram):
         :param histogram: The histogram you wish to convert into an uncertainties NumPy uarray
         :return: The uncertainties NumPy uarray
     """
+    if poisson:
+        variances = histogram.values()
+    else:
+        variances = histogram.variances()
     my_array = unumpy.uarray(
         histogram.values(),
-        np.sqrt(histogram.variances())
+        np.sqrt(variances)
     )
     return my_array
 
