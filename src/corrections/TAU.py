@@ -61,13 +61,24 @@ def tau_sf_corr(events, working_points: dict, cfg: dict, dependency="pt"):
     # Energy scale correction
     # Due to pythia bug, we set scale to 1
     # https://twiki.cern.ch/twiki/bin/view/CMS/TauIDRecommendationForRun3#Decay_mode_selection
-    tau_e_scale = 0*tau_corr["tau_energy_scale"].evaluate(
-        tau.pt, tau.eta, tau.decayMode, tau.genPartFlav, "DeepTau2018v2p5",
-        working_points["jet_to_tau"], working_points["e_to_tau"], "nom"
-    ) + 1.0
+    escale_args = (
+        tau.pt, tau.eta, tau.decayMode, tau.genPartFlav, "DeepTau2018v2p5", working_points["jet_to_tau"], working_points["e_to_tau"]
+    )
+    tau_e_scale = tau_corr["tau_energy_scale"].evaluate(*escale_args, "nom")
+    tau_e_scale_up = tau_corr["tau_energy_scale"].evaluate(*escale_args, "up")
+    tau_e_scale_down = tau_corr["tau_energy_scale"].evaluate(*escale_args, "down")
+    
     events["Tau", "corr_pt"] = tau.pt * tau_e_scale
     events["Tau", "corr_mass"] = tau.mass * tau_e_scale
     events["Tau", "scale_correction"] = tau_e_scale
+
+    events["Tau", "pt_TESUp"] = tau.pt * tau_e_scale_up
+    events["Tau", "mass_TESUp"] = tau.mass * tau_e_scale_up
+    events["Tau", "correction_TESUp"] = tau_e_scale_up
+
+    events["Tau", "pt_TESDown"] = tau.pt * tau_e_scale_down
+    events["Tau", "mass_TESDown"] = tau.mass * tau_e_scale_down
+    events["Tau", "correction_TESDown"] = tau_e_scale_down
 
     print("Computed tau ID SFs.")
     return events

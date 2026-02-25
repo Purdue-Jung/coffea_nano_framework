@@ -154,8 +154,8 @@ class Selector(SelectionProcessor):
         n_taus = (ak.sum(ak.num(tau)))
         tauprod = events.TauProd
 
-        tau_criteria = (tau.pt >= 20.0)
-        print(f"Tau pt >= 20 selection efficiency: {ak.sum(tau_criteria)*100/n_taus:.2f}%")
+        tau_criteria = (tau.pt_TESUp >= 20.0)
+        print(f"Tau pt TESUp >= 20 selection efficiency: {ak.sum(tau_criteria)*100/n_taus:.2f}%")
 
         tau_criteria = tau_criteria & (tau.eta <= 2.5)
         print(f"Tau eta <= 2.5 selection efficiency: {ak.sum(tau_criteria)*100/n_taus:.2f}%")
