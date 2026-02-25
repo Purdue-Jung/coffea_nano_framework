@@ -24,12 +24,10 @@ btagging:
       - "particleNet"
       - "robustParticleTransformer"
   '2024':
-    file: "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-03/btagging.json.gz"
+    file: "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-30/btagging_preliminary.json.gz"
     taggers:
       - "UParTAK4"
-    preliminary: True
   '2025':
-    file: "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-03/btagging.json.gz"
+    file: "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-30/btagging_preliminary.json.gz"
     taggers:
       - "UParTAK4"
-    preliminary: True
