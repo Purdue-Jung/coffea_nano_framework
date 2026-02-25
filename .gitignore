@@ -207,6 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Other
+*.root
 *.out
 notebooks/test
 plots/
